@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+h1, h2, h3 { color: #333; }
+.code-block { background-color: #f4f4f4; padding: 10px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>Churn Intelligence Platform - Project Documentation</h1>
+
+<h2>1. Use Case of the Project</h2>
+<p>The <strong>Churn Intelligence Platform</strong> is a machine learning-powered system designed to predict customer churn (attrition) and provide actionable insights. The main use cases are:</p>
+<ul>
+    <li><strong>Churn Prediction</strong>: Businesses can upload a batch of customer metrics (CSV format) to predict which customers are at risk of churning.</li>
+    <li><strong>Risk Assessment & Reason Analysis</strong>: The system evaluates the probability of churn, categorizes customers into risk levels (High, Medium, Low Risk), and identifies the primary reason for potential churn (e.g., Low Trading Activity, Login Frequency Drop, High Withdrawals).</li>
+    <li><strong>MLOps Feedback Loop</strong>: Users can upload actual customer outcomes (who actually churned). This feedback is used to automatically evaluate and retrain the machine learning model, ensuring continuous improvement in prediction accuracy.</li>
+</ul>
+
+<hr>
+
+<h2>2. Flowcharts</h2>
+
+<h3>A. Code Flow</h3>
+<img src="code_flow.png" style="max-width: 100%; height: auto;" alt="Code Flow Diagram" />
+
+<strong>Explanation:</strong>
+<ol>
+    <li>The frontend (Vue.js) accepts a CSV file from the user and sends a multipart/form-data request to the Go backend.</li>
+    <li>The Go backend acts as a proxy, forwarding the file to the Python Flask ML service.</li>
+    <li>The Flask service reads the CSV into a Pandas DataFrame.</li>
+    <li>It performs feature engineering (calculating drops in trades/logins, withdrawal ratios, etc.).</li>
+    <li>The pre-trained ML model (<code>churn_model.pkl</code>) predicts the churn probability for each customer.</li>
+    <li>The system categorizes the risk based on thresholds (High > 0.20, Medium > 0.10) and determines the primary reason for churn using business rules.</li>
+    <li>A JSON response containing the probabilities, risk levels, and reasons is sent back through the Go proxy to the Vue frontend, which then displays the results on the Dashboard.</li>
+</ol>
+
+<h3>B. User Flow</h3>
+<img src="user_flow.png" style="max-width: 100%; height: auto;" alt="User Flow Diagram" />
+
+<strong>Explanation:</strong>
+<ol>
+    <li>The user starts at the main Upload page (<code>/</code>).</li>
+    <li>To get predictions, they select a CSV file containing customer metrics and upload it under the "Run Predictions" section.</li>
+    <li>While the system processes the file, a loading state is shown. Upon success, the user is automatically navigated to the Dashboard.</li>
+    <li>On the Dashboard, the user can view which customers are at risk and prioritize retention efforts.</li>
+    <li>In a later session, when the true outcomes are known, the user uploads this data under "MLOps Feedback".</li>
+    <li>The system processes this feedback, matches records, potentially retrains the model, and displays a success notification with the retraining status.</li>
+</ol>
+
+<hr>
+
+<h2>3. APIs Used</h2>
+
+<h3>A. Predict API</h3>
+<ul>
+    <li><strong>Endpoint</strong>: <code>POST /predict</code> (Frontend calls <code>:8080/predict</code> which proxies to <code>:5000/predict</code>)</li>
+    <li><strong>Function</strong>: Accepts customer metrics data, runs the churn prediction model, and returns risk analysis.</li>
+    <li><strong>Request</strong>:
+        <ul>
+            <li><strong>Headers</strong>: <code>Content-Type: multipart/form-data</code></li>
+            <li><strong>Body</strong>: <code>file</code> (CSV format containing columns like Trades_30D, Login_30D, Withdrawals, Deposits).</li>
+        </ul>
+    </li>
+    <li><strong>Response</strong> (JSON):
+        <div class="code-block">
+[
+  {
+    "Customer_ID": "CUST_001",
+    "final_churn_probability": 0.25,
+    "Risk_Level": "High Risk",
+    "Primary_Reason": "Low Trading Activity"
+  }
+]
+        </div>
+    </li>
+</ul>
+
+<h3>B. Feedback API</h3>
+<ul>
+    <li><strong>Endpoint</strong>: <code>POST /feedback</code> (Frontend calls <code>:8080/feedback</code> which proxies to <code>:5000/feedback</code>)</li>
+    <li><strong>Function</strong>: Accepts actual churn outcomes, evaluates the data, and retrains the machine learning model.</li>
+    <li><strong>Request</strong>:
+        <ul>
+            <li><strong>Headers</strong>: <code>Content-Type: multipart/form-data</code></li>
+            <li><strong>Body</strong>: <code>file</code> (CSV format containing actual outcomes).</li>
+        </ul>
+    </li>
+    <li><strong>Response</strong> (JSON - Example):
+        <div class="code-block">
+{
+  "matched_customers": 150,
+  "total_labeled": 200,
+  "retrained": true
+}
+        </div>
+    </li>
+</ul>
+
+<h3>C. Config API (Get)</h3>
+<ul>
+    <li><strong>Endpoint</strong>: <code>GET /config</code> (Frontend calls <code>:8080/config</code> which proxies to <code>:5000/config</code>)</li>
+    <li><strong>Function</strong>: Retrieves current system/model configuration settings.</li>
+    <li><strong>Request</strong>: No body required.</li>
+    <li><strong>Response</strong> (JSON): Configuration key-value pairs.</li>
+</ul>
+
+<h3>D. Config API (Update)</h3>
+<ul>
+    <li><strong>Endpoint</strong>: <code>POST /config</code> (Frontend calls <code>:8080/config</code> which proxies to <code>:5000/config</code>)</li>
+    <li><strong>Function</strong>: Updates system/model configuration.</li>
+    <li><strong>Request</strong>: JSON payload with updated configuration values.</li>
+    <li><strong>Response</strong> (JSON): Confirmation of updated settings.</li>
+</ul>
+
+<hr>
+
+<h2>4. Overall Architecture & API Flow Diagram</h2>
+<img src="overall_flow.png" style="max-width: 100%; height: auto;" alt="Overall Flow Diagram" />
+
+</body>
+</html>
