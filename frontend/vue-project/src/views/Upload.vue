@@ -133,8 +133,9 @@ async function upload(file) {
   )
 
   try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
     const res = await axios.post(
-      "http://localhost:5000/predict",
+      `${apiUrl}/predict`,
       formData,
       {
         headers: {
@@ -172,7 +173,8 @@ async function submitFeedback() {
   try {
     const data = new FormData()
     data.append("file", feedbackFile.value)
-    const res = await axios.post("http://localhost:5000/feedback", data)
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+    const res = await axios.post(`${apiUrl}/feedback`, data)
     let msg = `Feedback processed! ${res.data.matched_customers || 0} records matched. Total labeled: ${res.data.total_labeled}`
     if (res.data.retrained) {
       msg += ` Model was retrained successfully!`
