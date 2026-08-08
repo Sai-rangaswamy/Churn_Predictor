@@ -5,12 +5,19 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-const pythonBase = "http://127.0.0.1:5000"
+var pythonBase = "http://127.0.0.1:5000"
+
+func init() {
+	if url := os.Getenv("PYTHON_SERVICE_URL"); url != "" {
+		pythonBase = url
+	}
+}
 
 // proxyFile forwards a multipart file upload to a Python endpoint.
 func proxyFile(c *gin.Context, path string) {
@@ -122,5 +129,9 @@ func main() {
 	r.GET("/config",        GetConfig)
 	r.POST("/config",       UpdateConfig)
 
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	r.Run(":" + port)
 }
